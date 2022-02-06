@@ -1,7 +1,10 @@
 const express = require('express')
+const config = require('./conf/config')
 
 const app = express()
 
-app.listen(5000, () => {
-    console.log('listening on port 5000')
-})
+const client = require('./db/conn')
+
+app.use(express.json())
+
+app.listen(config['server-port'])
