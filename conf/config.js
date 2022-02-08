@@ -4,7 +4,7 @@ const config = {
         name: "todo-app",
         url: "mongodb://localhost:27017",
         collections: {
-            toDoItem: "todo-item"
+            todoItems: "todo-item"
         }
     }
 }
