@@ -6,7 +6,7 @@ class ToDoItem {
     constructor(name, description, deadline) {
         this.name = name
         this.description = description
-        this.deadline = deadline
+        this.deadline = new Date(deadline).toUTCString()
         this.done = false
     }
 
@@ -19,12 +19,7 @@ class ToDoItem {
      */
     async save() {
         try {
-            await client.db().collection(config.db.collections.todoItems).insertOne({
-                name: this.name,
-                description: this.description,
-                deadline: this.deadline,
-                description: this.description
-            })
+            await client.db().collection(config.db.collections.todoItems).insertOne(this)
         } catch (error) {
             console.error(error)
             throw error
@@ -32,7 +27,7 @@ class ToDoItem {
     }
 
     /**
-     * Retrieve All ToDoItem from database 
+     * Retrieve All ToDo Items from database 
      * @returns ToDoItem Array
      */
     static async getToDoItems() {
@@ -55,7 +50,7 @@ class ToDoItem {
     static async getToDoItemById(id) {
         try {
             const product = await client.db()
-                .collection(config.db.collections.todoItems).findOne({ __id: ObjectId(id) })
+                .collection(config.db.collections.todoItems).findOne({ _id: ObjectId(id) })
             return product
         } catch (error) {
             console.error(error)
@@ -69,7 +64,8 @@ class ToDoItem {
      */
     static async removeById(id) {
         try {
-            await client.db().collection(config.db.collections.todoItems).deleteOne({ _id: Object(id) })
+            await client.db().collection(config.db.collections.todoItems).deleteOne({ _id: ObjectId(id) })
+            return
         } catch (error) {
             console.error(error)
             throw error
@@ -80,10 +76,21 @@ class ToDoItem {
      * Update ToDo item with the IDA into the database
      * @param {*} toDoItem 
      */
-    async updateById() {
+    static async updateById(json) {
         try {
             await client.db().collection(config.db.collections.todoItems)
-                .updateOne({ _id: ObjectId(this.id) }, { $set: this })
+                .updateOne({
+                    _id: ObjectId(json._id)
+                },
+                    {
+                        $set: {
+                            name: json.name,
+                            description: json.description,
+                            deadline: (new Date(json.deadline)).toUTCString(),
+                            done: json.done
+                        }
+                    }
+                )
         } catch (error) {
             console.error(error)
             throw error

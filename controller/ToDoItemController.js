@@ -2,7 +2,11 @@ const express = require('express')
 const ToDoItem = require('../model/ToDoItem')
 
 module.exports = class ToDoItemController {
-
+    /**
+     * Add ToDo Item route
+     * @param {*} req 
+     * @param {*} res 
+     */
     static async addToDoItem(req, res) {
         const { name, description, deadline } = req.body
         const toDo = new ToDoItem(name, description, deadline)
@@ -16,14 +20,20 @@ module.exports = class ToDoItemController {
         }
     }
 
+    /**
+     * Retrieve ToDo Items list route
+     * @param {*} req 
+     * @param {*} res 
+     */
+
     static async getToDoItems(req, res) {
         try {
-            const toDos = await todoItem.getToDoItems()
+            const toDos = await ToDoItem.getToDoItems()
 
             res.status(200)
                 .json({
                     items: toDos,
-                    message: "All ToDoItems we're retrieved from database with success."
+                    message: "All ToDo Items we're succesfully retrieved from database."
                 })
         } catch (error) {
             res.status(500).json({
@@ -34,14 +44,18 @@ module.exports = class ToDoItemController {
 
     }
 
+    /**
+     * Retrieve ToDo Item route
+     * @param {*} req 
+     * @param {*} res 
+     */
     static async getToDoItemById(req, res) {
         const id = req.params.id
-
         try {
             const toDoItem = await ToDoItem.getToDoItemById(id)
             res.status(200).json({
                 item: toDoItem,
-                message: "Retrieved ToDoItem from database succesfully."
+                message: "Retrieved ToDoItem successfuly from database."
             })
         } catch (error) {
             res.status(500).json({
@@ -51,8 +65,13 @@ module.exports = class ToDoItemController {
         }
     }
 
+    /**
+     * Remove ToDo Item route 
+     * @param {*} req 
+     * @param {*} res 
+     */
     static async removeToDoItemById(req, res) {
-        const id = req.body
+        const id = req.body.id
         try {
             await ToDoItem.removeById(id)
             res.status(200).json({
@@ -66,12 +85,14 @@ module.exports = class ToDoItemController {
         }
     }
 
-    async updateToDoItem(req, res) {
-        const { id, name, description, deadline, done } = req.body
-
+    /**
+     * Update ToDo Item route 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    static async updateToDoItem(req, res) {
         try {
-            const toDoItem = new ToDoItem(name, description, deadline, done)
-            await toDoItem.updateById(id)
+            await ToDoItem.updateById(req.body)
             res.status(200).json({
                 message: "ToDo Item succesfuly edited"
             })
