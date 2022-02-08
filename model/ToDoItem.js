@@ -11,9 +11,8 @@ class ToDoItem {
     }
 
     /**
-     * CRUD Model Operations
+     * CRUD Operations
      */
-
 
     /**
      * Save ToDoItem into database
@@ -36,7 +35,7 @@ class ToDoItem {
      * Retrieve All ToDoItem from database 
      * @returns ToDoItem Array
      */
-    static async getProducts() {
+    static async getToDoItems() {
         try {
             const products = await client.db()
                 .collection(config.db.collections.todoItems)
@@ -53,7 +52,7 @@ class ToDoItem {
      * @param {*} id 
      * @returns ToDoItem 
      */
-    async getProductById(id) {
+    static async getToDoItemById(id) {
         try {
             const product = await client.db()
                 .collection(config.db.collections.todoItems).findOne({ __id: ObjectId(id) })
@@ -68,7 +67,7 @@ class ToDoItem {
      * Remove ToDoItem with the given ID from darabase
      * @param {*} id 
      */
-    async removeById(id) {
+    static async removeById(id) {
         try {
             await client.db().collection(config.db.collections.todoItems).deleteOne({ _id: Object(id) })
         } catch (error) {
@@ -81,10 +80,10 @@ class ToDoItem {
      * Update ToDo item with the IDA into the database
      * @param {*} toDoItem 
      */
-    async updateById(toDoItem) {
+    async updateById() {
         try {
             await client.db().collection(config.db.collections.todoItems)
-                .replaceOne({ _id: ObjectId(toDoItem.id) }, toDoItem)
+                .updateOne({ _id: ObjectId(this.id) }, { $set: this })
         } catch (error) {
             console.error(error)
             throw error
