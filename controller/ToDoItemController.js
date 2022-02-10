@@ -91,8 +91,23 @@ module.exports = class ToDoItemController {
      * @param {*} res 
      */
     static async updateToDoItem(req, res) {
+        if (!req.body._id) {
+            throw Error('missing ID')
+        }
+
+        const updateObject = {}
+        const id = req.body._id
+
+        for (const prop of ['name', 'description', 'done']) {
+            if (prop in req.body) {
+                updateObject[prop] = req.body[prop]
+            }
+        }
+
+        updateObject.deadline = new Date(req.body.deadline).toUTCString()
+
         try {
-            await ToDoItem.updateById(req.body)
+            await ToDoItem.updateById(updateObject, id)
             res.status(200).json({
                 message: "ToDo Item succesfuly edited"
             })

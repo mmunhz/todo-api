@@ -73,23 +73,16 @@ class ToDoItem {
     }
 
     /**
-     * Update ToDo item with the IDA into the database
+     * Update ToDo item with the ID into the database
      * @param {*} toDoItem 
      */
-    static async updateById(json) {
+    static async updateById(updateObject, id) {
         try {
             await client.db().collection(config.db.collections.todoItems)
                 .updateOne({
-                    _id: ObjectId(json._id)
+                    _id: ObjectId(id)
                 },
-                    {
-                        $set: {
-                            name: json.name,
-                            description: json.description,
-                            deadline: (new Date(json.deadline)).toUTCString(),
-                            done: json.done
-                        }
-                    }
+                    { $set: updateObject }
                 )
         } catch (error) {
             console.error(error)
