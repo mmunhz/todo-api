@@ -3,13 +3,22 @@ const config = require('../conf/config')
 const { ObjectId } = require("mongodb")
 
 class ToDoItem {
-    constructor(name, description, deadline) {
+    constructor(name) {
         this.name = name
-        this.description = description
-        this.deadline = new Date(deadline).toUTCString()
+        this.description = ""
+        this.deadline = ""
         this.done = false
     }
 
+    /**
+     * Check if it is a valid instance of a ToDo Item. 
+     * Instance is valid if it's name property isn't empty and
+     * has at least one non space character.
+     * @returns true if it's valid or false if it's not.
+     */
+    isValid() {
+        return this.name.trim().length > 0
+    }
     /**
      * CRUD Operations
      */
