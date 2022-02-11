@@ -2,6 +2,8 @@ const client = require("../db/conn")
 const config = require('../conf/config')
 const { ObjectId } = require("mongodb")
 
+class ValidationError extends Error { }
+
 class ToDoItem {
     constructor(name) {
         this.name = name
@@ -19,16 +21,21 @@ class ToDoItem {
     isValid() {
         return this.name.trim().length > 0
     }
-    /**
-     * CRUD Operations
-     */
+
+    /* CRUD Operations */
 
     /**
      * Save ToDoItem into database
      */
     async save() {
+        if (!this.isValid()) {
+            throw new ValidationError("A valid name is required.")
+        }
+
         try {
-            await client.db().collection(config.db.collections.todoItems).insertOne(this)
+            await client.db()
+                .collection(config.db.collections.todoItems)
+                .insertOne(this)
         } catch (error) {
             console.error(error)
             throw error
@@ -83,9 +90,17 @@ class ToDoItem {
 
     /**
      * Update ToDo item with the ID into the database
-     * @param {*} toDoItem 
+     * @param {*} updateObject - Object with the properties to be updated.
+     * @param id - Id of the ToDo Item wich will be updated 
      */
     static async updateById(updateObject, id) {
+        // Check if update object has a valid name property
+        if (updateObject.name) {
+            if (!updateObject.name.trim().length > 0) {
+                delete updateObject.name
+            }
+        }
+
         try {
             await client.db().collection(config.db.collections.todoItems)
                 .updateOne({
@@ -102,4 +117,4 @@ class ToDoItem {
 
 }
 
-module.exports = ToDoItem
+module.exports = { ToDoItem, ValidationError }
