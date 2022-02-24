@@ -1,23 +1,31 @@
 const { MongoClient } = require('mongodb')
 const config = require('../conf/config')
 
-const uri = config.db.url + "/" + config.db.name
+class Database {
+    constructor() {
+        this.client = new MongoClient(config.db.url)
+    }
 
-const client = new MongoClient(uri)
+    async connect() {
+        try {
+            await this.client.connect()
+            console.log("Database connected")
+        } catch (error) {
+            console.error(error)
+            throw error
+        }
+    }
 
-/**
- * Connect to the database
- */
-async function connect() {
-    try {
-        await client.connect()
-        console.log("Connected to the database.")
-    } catch (error) {
-        console.error("Failed to connect to the database.")
-        throw error
+    getDb() {
+        try {
+            return this.client.db(config.db.name)
+        } catch (error) {
+            console.error(error)
+            throw error
+        }
     }
 }
 
-connect()
+const database = new Database()
 
-module.exports = client 
+module.exports = database

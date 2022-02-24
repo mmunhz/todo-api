@@ -1,6 +1,6 @@
-const client = require("../db/conn")
-const config = require('../conf/config')
+const dbClient = require("../db/conn")
 const { ObjectId } = require("mongodb")
+const config = require("../conf/config")
 
 class ValidationError extends Error { }
 
@@ -18,103 +18,130 @@ class ToDoItem {
      * has at least one non space character.
      * @returns true if it's valid or false if it's not.
      */
-    isValid() {
-        return this.name.trim().length > 0
+    static isValid(json) {
+        if (json.name) {
+            if (json.name.trim().length > 1) return true
+        }
+        return false
     }
 
-    /* CRUD Operations */
-
-    /**
-     * Save ToDoItem into database
-     */
-    async save() {
-        if (!this.isValid()) {
-            throw new ValidationError("A valid name is required.")
+    static fromJSON(json) {
+        if (!(ToDoItem.isValid(json))) {
+            throw new ValidationError("Name property is required.")
         }
 
-        try {
-            await client.db()
-                .collection(config.db.collections.todoItems)
-                .insertOne(this)
-        } catch (error) {
-            console.error(error)
-            throw error
+        const toDoItem = new ToDoItem(json.name)
+        if ("description" in json) {
+            toDoItem.description = json.description
         }
+
+        if ("deadline" in json) {
+            const dateUTCString = new Date(json.date).toUTCString() || ""
+            toDoItem.deadline = dateUTCString
+        }
+
+        return toDoItem
     }
-
-    /**
-     * Retrieve All ToDo Items from database 
-     * @returns ToDoItem Array
-     */
-    static async getToDoItems() {
-        try {
-            const products = await client.db()
-                .collection(config.db.collections.todoItems)
-                .find().toArray()
-            return products
-        } catch (error) {
-            console.error(error)
-            throw error
-        }
-    }
-
-    /**
-     * Retrieve ToDoItem with the given ID from database
-     * @param {*} id 
-     * @returns ToDoItem 
-     */
-    static async getToDoItemById(id) {
-        try {
-            const product = await client.db()
-                .collection(config.db.collections.todoItems).findOne({ _id: ObjectId(id) })
-            return product
-        } catch (error) {
-            console.error(error)
-            throw error
-        }
-    }
-
-    /**
-     * Remove ToDoItem with the given ID from darabase
-     * @param {*} id 
-     */
-    static async removeById(id) {
-        try {
-            await client.db().collection(config.db.collections.todoItems).deleteOne({ _id: ObjectId(id) })
-            return
-        } catch (error) {
-            console.error(error)
-            throw error
-        }
-    }
-
-    /**
-     * Update ToDo item with the ID into the database
-     * @param {*} updateObject - Object with the properties to be updated.
-     * @param id - Id of the ToDo Item wich will be updated 
-     */
-    static async updateById(updateObject, id) {
-        // Check if update object has a valid name property
-        if (updateObject.name) {
-            if (!updateObject.name.trim().length > 0) {
-                delete updateObject.name
-            }
-        }
-
-        try {
-            await client.db().collection(config.db.collections.todoItems)
-                .updateOne({
-                    _id: ObjectId(id)
-                },
-                    { $set: updateObject }
-                )
-        } catch (error) {
-            console.error(error)
-            throw error
-        }
-    }
-
 
 }
 
-module.exports = { ToDoItem, ValidationError }
+class ToDoItemDAO {
+    static instance
+
+    constructor() { }
+
+    getCollection() {
+        return dbClient.getDb().collection(config.db.collections.todoItems)
+    }
+
+    static getInstance() {
+        if (!ToDoItemDAO.instance) {
+            ToDoItemDAO.instance = new ToDoItemDAO()
+        }
+        return ToDoItemDAO.instance
+    }
+
+    /*---- CRUD Operations ----*/
+
+    async insert(toDoItem) {
+        try {
+            const response = await this.getCollection().insertOne(toDoItem)
+
+            if (!response || response.insertedCount < 1) {
+                throw new Error("Invalid result while inserting item.")
+            }
+            return response.insertedCount
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+    }
+
+    async getAll() {
+        try {
+            return await this.getCollection().find().toArray() || []
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+    }
+
+    async getOneById(id) {
+        try {
+            const response = await this.getCollection().findOne({ _id: ObjectId(id) })
+            return response
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+    }
+
+    async removeOneById(id) {
+        try {
+            const response = await this.getCollection().deleteOne({ _id: ObjectId(id) })
+            if (!response || response.deletedCount < 1) {
+                throw new Error("Invalid result while removing item.")
+            }
+            return response.deletedCount
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+
+    }
+
+    async updateOneById(json) {
+        const id = json.id
+        const updateObject = {}
+
+        if (!id) {
+            throw new ValidationError("Can't update an item without the Id.")
+        }
+        if (json.name) {
+            if (json.name.trim().length < 1) {
+                throw new ValidationError("Invalid value for name property.")
+            }
+            updateObject.name = json.name
+        }
+
+        if ("description" in json) updateObject.description = json.description 
+        if ("deadline" in json) updateObject.deadline = new Date(json.deadline).toUTCString()
+        if (json.done) updateObject.done = json.done
+
+
+        try {
+            const response = await this.getCollection()
+                .updateOne({ _id: ObjectId(id) }, { $set: updateObject })
+
+            if (!response) {
+                throw new Error("Invalid result while updatin item.")
+            }
+            return response.modifiedCount
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+    }
+}
+
+module.exports = { ToDoItem, ToDoItemDAO, ValidationError }

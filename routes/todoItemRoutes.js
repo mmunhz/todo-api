@@ -3,10 +3,10 @@ const router = require("express").Router()
 
 const ToDoItemController = require("../controller/ToDoItemController")
 
-router.get('/', ToDoItemController.getToDoItems)
-router.get('/:id', ToDoItemController.getToDoItemById)
-router.post('/add', ToDoItemController.addToDoItem)
-router.delete('/remove', ToDoItemController.removeToDoItemById)
-router.patch('/edit', ToDoItemController.updateToDoItem)
+router.get('/', ToDoItemController.getAll)
+router.get('/:id', ToDoItemController.getOneById)
+router.post('/add', ToDoItemController.insert)
+router.delete('/remove', ToDoItemController.removeOneById)
+router.patch('/edit', ToDoItemController.updateOneById)
 
 module.exports = router

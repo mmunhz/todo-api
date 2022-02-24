@@ -1,73 +1,61 @@
 const express = require('express')
-const { ToDoItem, ValidationError } = require('../model/ToDoItem')
+const { ToDoItem, ToDoItemDAO, ValidationError } = require('../model/ToDoItem')
 
 module.exports = class ToDoItemController {
-    /**
-     * Add ToDo Item route
-     * @param {*} req 
-     * @param {*} res 
-     */
-    static async addToDoItem(req, res) {
-        const { name, description, deadline } = req.body
-        if (!name) {
-            res.status(422).json({ message: "The name property is required." })
-            return
-        }
-        const toDo = new ToDoItem(name)
 
-        if (description) toDo.description = description
-        if (deadline) toDo.deadline = new Date(deadline).toUTCString()
-
+    static async insert(req, res) {
         try {
-            await toDo.save()
+            const toDo = ToDoItem.fromJSON(req.body)
+            const response = await ToDoItemDAO.getInstance().insert(toDo)
 
-            res.status(201).json({ message: "ToDo Item succesuly added to the database." })
+            res.status(201).json({
+                message: "ToDo successfully created.",
+                insertedCount: response
+            })
+
         } catch (error) {
             if (error instanceof ValidationError) {
-                res.status(422).json({ message: error.message, debug: req.body.name })
+                res.status(422).json({
+                    message: error.message
+                })
             } else {
-                res.status(500).json({ message: "Internal error. Database query failed." })
+                res.status(500).json({
+                    message: "Internal error. Database query failed."
+                })
+                throw error
             }
         }
     }
 
-    /**
-     * Retrieve ToDo Items list route
-     * @param {*} req 
-     * @param {*} res 
-     */
-
-    static async getToDoItems(req, res) {
+    static async getAll(req, res) {
         try {
-            const toDos = await ToDoItem.getToDoItems()
-
-            res.status(200)
-                .json({
-                    items: toDos,
-                    message: "All ToDo Items we're succesfully retrieved from database."
+            const response = await ToDoItemDAO.getInstance().getAll()
+            if (response) {
+                res.status(200).json({
+                    message: "ToDos successfully retrieved.",
+                    items: response
                 })
+            }
         } catch (error) {
             res.status(500).json({
                 message: "Internal error. Database query failed."
             })
             throw error
         }
-
     }
 
-    /**
-     * Retrieve ToDo Item route
-     * @param {*} req 
-     * @param {*} res 
-     */
-    static async getToDoItemById(req, res) {
+    static async getOneById(req, res) {
         const id = req.params.id
         try {
-            const toDoItem = await ToDoItem.getToDoItemById(id)
-            res.status(200).json({
-                item: toDoItem,
-                message: "Retrieved ToDoItem successfuly from database."
-            })
+            const response = await ToDoItemDAO.getInstance().getOneById(id) || null
+            if (response) {
+                res.status(200).json({
+                    message: "ToDo successfully retrieved.",
+                    item: response
+                })
+            } else {
+                res.status(404).json({ message: "ToDo not found." })
+            }
         } catch (error) {
             res.status(500).json({
                 message: "Internal error. Database query failed."
@@ -76,62 +64,42 @@ module.exports = class ToDoItemController {
         }
     }
 
-    /**
-     * Remove ToDo Item route 
-     * @param {*} req 
-     * @param {*} res 
-     */
-    static async removeToDoItemById(req, res) {
-        const id = req.body.id
+    static async removeOneById(req, res) {
+        const id = req.body
         try {
-            await ToDoItem.removeById(id)
+            const response = await ToDoItemDAO.getInstance().removeOneById(id)
             res.status(200).json({
-                message: "ToDo Item succesfully removed."
+                message: "ToDo successfully deleted.",
+                deletedCount: response
             })
         } catch (error) {
             res.status(500).json({
-                message: "Internal error. Database query failed."
+                message: "Internal error. Database query failed.",
             })
             throw error
         }
+
     }
 
-    /**
-     * Update ToDo Item route 
-     * @param {*} req 
-     * @param {*} res 
-     */
-    static async updateToDoItem(req, res) {
-        if (!req.body._id) {
-            res.status(422).json({
-                message: "ToDO Item id is missing."
+    static async updateOneById(req, res) {
+        try {
+            const response = await ToDoItemDAO.getInstance().updateOneById(req.body)
+            res.status(200).json({
+                message: "ToDo successfully updated.",
+                modifiedCount: response
             })
-        }
-
-        const updateObject = {}
-        const id = req.body._id
-
-        if (req.body.deadline) {
-            updateObject.deadline = new Date(req.body.deadline).toUTCString()
-        }
-
-        for (const prop of ['name', 'description', 'done']) {
-            if (prop in req.body) {
-                updateObject[prop] = req.body[prop]
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                res.status(422).json({
+                    message: error.message
+                })
+            }
+            else {
+                res.status(500).json({
+                    message: "Internal error. Database query failed."
+                })
+                throw error
             }
         }
-
-        try {
-            await ToDoItem.updateById(updateObject, id)
-            res.status(200).json({
-                message: "ToDo Item succesfuly edited."
-            })
-        } catch (error) {
-            res.status(500).json({
-                message: "Internal error. Database query failed."
-            })
-        }
-
     }
-
 }
