@@ -1,6 +1,7 @@
 const config = require("../conf/config")
 const dbClient = require("../db/conn")
 // User Model 
+class ValidationError extends Error { }
 
 class User {
     // properties: username, email, password
@@ -24,15 +25,28 @@ class UserDAO {
 
     constructor() { }
     // get instance of UserDAO
-    getInstance() {
+    static getInstance() {
         if (!UserDAO.instance) {
-            UserDAO.instance = new UserDAO
+            UserDAO.instance = new UserDAO()
         }
         return UserDAO.instance
     }
     // get users collection
     getCollection() {
-        return dbClient.getDb().getCollection(config.db.collections.users)
+        return dbClient.getDb().collection(config.db.collections.users)
+    }
+
+    // ----- CRUD Operations ----- //
+    // getAll will be only used by tests
+    async getAll() {
+        try {
+            return await this.getCollection().find().toArray() || []
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
     }
 
 }
+
+module.exports = { User, UserDAO }
