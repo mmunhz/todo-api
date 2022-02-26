@@ -47,6 +47,23 @@ class UserDAO {
         }
     }
 
+    /**
+     * Register user to database
+     * @param {*} user 
+     */
+    async insert(user) {
+        try {
+            const response = await this.getCollection().insertOne(user)
+            if (!response) {
+                throw new Error("Invalid result while registering user.")
+            }
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+    }
+
+    
 }
 
 module.exports = { User, UserDAO }
